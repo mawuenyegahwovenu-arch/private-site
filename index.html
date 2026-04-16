@@ -2,111 +2,205 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat Room</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
-    <script type="module">
-        // Import Firebase from the CDN
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <title>Private Cloud Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { transition: background 0.3s, color 0.3s; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        
+        /* Dark Theme (Default) */
+        .theme-dark { background: #0f172a; color: white; }
+        .theme-dark .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+        .theme-dark .bubble-me { background: #2563eb; }
+        .theme-dark .bubble-them { background: #1e293b; }
+        .theme-dark .input-field { background: #0f172a; border-color: #334155; color: white; }
 
-        // Your specific Firebase configuration
+        /* Light Theme */
+        .theme-light { background: #f1f5f9; color: #1e293b; }
+        .theme-light .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .theme-light .bubble-me { background: #3b82f6; color: white; }
+        .theme-light .bubble-them { background: #e2e8f0; color: #1e293b; }
+        .theme-light .input-field { background: white; border-color: #cbd5e1; color: #1e293b; }
+
+        #chat-box::-webkit-scrollbar { width: 3px; }
+        #chat-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .tooltip { position: relative; }
+        .tooltip::after {
+            content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            padding: 4px 8px; background: #3b82f6; color: white; border-radius: 6px; font-size: 10px; opacity: 0; pointer-events: none; transition: 0.2s;
+        }
+        .tooltip:hover::after { opacity: 1; }
+        .msg-pop { animation: msgPop 0.3s ease-out; }
+        @keyframes msgPop { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body id="main-body" class="theme-dark flex items-center justify-center p-2">
+
+    <div id="login-screen" class="glass p-10 rounded-[3rem] w-full max-w-sm text-center shadow-2xl">
+        <div class="text-4xl mb-4">💎</div>
+        <h2 id="display-title-login" class="text-xl font-black mb-8 tracking-[0.2em] text-blue-500 uppercase">VAULT</h2>
+        <input id="nameInput" type="text" placeholder="Alias" class="input-field w-full p-4 rounded-2xl mb-4 outline-none border transition-all">
+        <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-4 rounded-2xl mb-8 outline-none border transition-all">
+        <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">ACCESS</button>
+    </div>
+
+    <div id="chat-screen" class="hidden w-full max-w-md h-[94vh] flex flex-col glass rounded-[3rem] overflow-hidden relative shadow-2xl">
+        <div class="p-5 border-b border-white/10 flex justify-between items-center">
+            <div id="active-users" class="flex items-center"></div>
+            <div class="flex gap-2">
+                <button onclick="toggleTheme()" class="tooltip bg-slate-800/50 p-2 rounded-full border border-white/5" data-tip="Switch Theme">🌓</button>
+                <div class="relative tooltip" data-tip="Mood">
+                    <button onclick="document.getElementById('mood-menu').classList.toggle('hidden')" class="bg-slate-800/50 p-2 rounded-full border border-white/5">😊</button>
+                    <div id="mood-menu" class="hidden absolute right-0 mt-3 p-2 bg-slate-800 rounded-2xl flex gap-2 z-50 shadow-2xl">
+                        <button onclick="updateMood('📚')">📚</button><button onclick="updateMood('😴')">😴</button><button onclick="updateMood('🍕')">🍕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5 py-3">
+            <div class="bg-blue-500/10 p-3 rounded-2xl border border-blue-500/20">
+                <p id="pinText" class="text-[10px] font-medium text-blue-500 italic">No pinned notes...</p>
+                <div class="flex gap-2 mt-1">
+                    <input id="pinInput" type="text" placeholder="Update pin..." class="bg-transparent text-[10px] outline-none border-b border-blue-500/30 flex-1">
+                    <button onclick="savePin()" class="text-[10px] font-bold text-blue-500">PIN</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-box" class="flex-1 p-5 overflow-y-auto space-y-3"></div>
+        <div id="typing-indicator" class="px-6 py-1 text-[10px] h-4 italic text-blue-500"></div>
+
+        <div class="p-5 flex items-center gap-3">
+            <input id="msgInput" type="text" placeholder="Message..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendMessage()" class="input-field flex-1 p-4 rounded-2xl outline-none border transition-all">
+            <button onclick="sendMessage()" class="bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-90 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DEV SETTINGS ---
+        const DEV_SETTINGS = { ACCESS_KEY: "toffee", VAULT_NAME: "TOFFEE & SHANTEL" };
+        // --------------------
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded, onChildChanged, onValue, set, update, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyDw_WkrANnsPvrnhqONu4Jx7U8BkrduL38",
             authDomain: "private-chart.firebaseapp.com",
             databaseURL: "https://private-chart-default-rtdb.firebaseio.com", 
             projectId: "private-chart",
-            storageBucket: "private-chart.firebasestorage.app",
+            storageBucket: "private-chart.appspot.com",
             messagingSenderId: "808076132779",
             appId: "1:808076132779:web:456dbb1336d73ab661d2ee"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const messagesRef = ref(db, 'messages');
+        const pinRef = ref(db, 'pinnedNote');
+        let currentUser = "";
+        const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
-        // Function to check password and enter chat
+        document.getElementById('display-title-login').innerText = DEV_SETTINGS.VAULT_NAME;
+
+        window.toggleTheme = () => {
+            const body = document.getElementById('main-body');
+            body.classList.toggle('theme-dark');
+            body.classList.toggle('theme-light');
+        };
+
         window.checkAccess = () => {
             const name = document.getElementById('nameInput').value;
             const pass = document.getElementById('passInput').value;
-            
-            if (name.trim() === "") {
-                alert("Please enter your name");
-                return;
-            }
-
-            // YOUR SECRET PASSWORD IS SET HERE
-            if (pass === "1234") { 
+            if (pass === DEV_SETTINGS.ACCESS_KEY && name.trim() !== "") {
+                currentUser = name;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('chat-screen').classList.remove('hidden');
-                loadMessages();
-            } else {
-                alert("Incorrect Password!");
-            }
+                setUserStatus(); loadMessages(); loadPinnedNote();
+            } else { alert("Key Incorrect"); }
         };
 
-        // Function to send a message to Firebase
-        window.sendMessage = () => {
-            const text = document.getElementById('msgInput').value;
-            const name = document.getElementById('nameInput').value;
-            if (text.trim() !== "") {
-                push(messagesRef, {
-                    username: name,
-                    message: text,
-                    timestamp: serverTimestamp()
-                });
-                document.getElementById('msgInput').value = "";
-            }
-        };
-
-        // Function to listen for new messages
-        function loadMessages() {
-            onChildAdded(messagesRef, (snapshot) => {
-                const data = snapshot.val();
-                const chatBox = document.getElementById('chat-box');
-                const msgDiv = document.createElement('div');
-                msgDiv.className = "mb-3 p-3 rounded-xl bg-white border border-gray-100 shadow-sm self-start max-w-[80%]";
-                msgDiv.innerHTML = `
-                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wide mb-1">${data.username}</p>
-                    <p class="text-gray-800 text-sm">${data.message}</p>
-                `;
-                chatBox.appendChild(msgDiv);
-                chatBox.scrollTop = chatBox.scrollHeight;
+        function setUserStatus() {
+            const statusRef = ref(db, `status/${currentUser}`);
+            set(statusRef, { online: true, mood: "👋", typing: false });
+            onDisconnect(statusRef).set({ online: false, mood: "", typing: false });
+            onValue(ref(db, 'status'), (snapshot) => {
+                const statuses = snapshot.val();
+                let html = "", typingHtml = "";
+                for(let u in statuses) {
+                    if(u !== currentUser && statuses[u].online) {
+                        html += `<div class="text-[10px] bg-blue-500/20 px-3 py-1 rounded-full mr-2 border border-blue-500/30">● ${u} ${statuses[u].mood || ''}</div>`;
+                        if(statuses[u].typing) typingHtml = `${u} is typing...`;
+                    }
+                }
+                document.getElementById('active-users').innerHTML = html;
+                document.getElementById('typing-indicator').innerHTML = typingHtml;
             });
         }
+
+        window.handleTyping = () => {
+            update(ref(db, `status/${currentUser}`), { typing: document.getElementById('msgInput').value.length > 0 });
+        };
+
+        window.updateMood = (e) => { update(ref(db, `status/${currentUser}`), { mood: e }); document.getElementById('mood-menu').classList.add('hidden'); };
+
+        window.savePin = () => { const n = document.getElementById('pinInput').value; if(n.trim() !== "") set(pinRef, { text: n }); };
+
+        function loadPinnedNote() { onValue(pinRef, (s) => { if(s.val()) document.getElementById('pinText').innerText = `📌 ${s.val().text}`; }); }
+
+        window.sendMessage = () => {
+            const t = document.getElementById('msgInput').value;
+            if (t.trim() !== "") {
+                push(messagesRef, { username: currentUser, message: t, seen: false, timestamp: serverTimestamp() });
+                document.getElementById('msgInput').value = "";
+                update(ref(db, `status/${currentUser}`), { typing: false });
+            }
+        };
+
+        function loadMessages() {
+            onChildAdded(messagesRef, (s) => {
+                const d = s.val();
+                if (d.username !== currentUser) {
+                    if (!d.seen) update(ref(db, `messages/${s.key}`), { seen: true });
+                    msgSound.play().catch(()=>{});
+                }
+                renderMessage(s);
+            });
+            onChildChanged(messagesRef, (s) => {
+                const el = document.getElementById(`msg-${s.key}`);
+                if (el && s.val().seen) {
+                    const c = el.querySelector('.checks');
+                    if(c) { c.innerText = '✓✓'; c.classList.add('text-blue-500'); }
+                }
+            });
+        }
+
+        function renderMessage(s) {
+            const d = s.val();
+            const isMe = d.username === currentUser;
+            const chatBox = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.id = `msg-${s.key}`;
+            div.className = `flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end mb-2 gap-2 msg-pop`;
+            div.innerHTML = `
+                <div class="${isMe ? 'bubble-me rounded-l-2xl rounded-tr-2xl' : 'bubble-them rounded-r-2xl rounded-tl-2xl'} p-3 max-w-[80%] shadow-sm">
+                    <p class="text-[8px] opacity-50 font-bold mb-1 uppercase">${d.username}</p>
+                    <p class="text-sm">${d.message}</p>
+                    <div class="flex items-center justify-end mt-1 space-x-1">
+                        <p class="text-[7px] opacity-40">${d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</p>
+                        ${isMe ? `<span class="checks text-[10px] ${d.seen ? 'text-blue-500' : 'text-gray-400'}">${d.seen ? '✓✓' : '✓'}</span>` : ''}
+                    </div>
+                </div>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     </script>
-</head>
-<body class="bg-slate-100 h-screen flex items-center justify-center font-sans">
-
-    <div id="login-screen" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 border border-gray-100">
-        <h2 class="text-2xl font-black mb-6 text-center text-slate-800">PRIVATE CHAT</h2>
-        <div class="space-y-4">
-            <input id="nameInput" type="text" placeholder="Your Name" class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-            <input id="passInput" type="password" placeholder="Passcode" class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-            <button onclick="checkAccess()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95">Enter Room</button>
-        </div>
-    </div>
-
-    <div id="chat-screen" class="hidden w-full max-w-md bg-slate-50 h-[95vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden mx-4 border border-white">
-        <div class="bg-white p-5 border-b flex justify-between items-center">
-            <h3 class="font-bold text-slate-800">Secure Chat</h3>
-            <span class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
-        </div>
-        
-        <div id="chat-box" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-2">
-            </div>
-
-        <div class="p-4 bg-white border-t flex items-center gap-2">
-            <input id="msgInput" type="text" placeholder="Type a message..." 
-                   onkeypress="if(event.key === 'Enter') sendMessage()"
-                   class="flex-1 bg-slate-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
-            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl font-bold transition-all active:scale-90">
-                Send
-            </button>
-        </div>
-    </div>
-
 </body>
 </html>
