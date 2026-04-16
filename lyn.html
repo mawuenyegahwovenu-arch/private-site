@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="module">
+        // Import Firebase from the CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Your specific Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDw_WkrANnsPvrnhqONu4Jx7U8BkrduL38",
+            authDomain: "private-chart.firebaseapp.com",
+            databaseURL: "https://private-chart-default-rtdb.firebaseio.com", 
+            projectId: "private-chart",
+            storageBucket: "private-chart.firebasestorage.app",
+            messagingSenderId: "808076132779",
+            appId: "1:808076132779:web:456dbb1336d73ab661d2ee"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const messagesRef = ref(db, 'messages');
+
+        // Function to check password and enter chat
+        window.checkAccess = () => {
+            const name = document.getElementById('nameInput').value;
+            const pass = document.getElementById('passInput').value;
+            
+            if (name.trim() === "") {
+                alert("Please enter your name");
+                return;
+            }
+
+            // YOUR SECRET PASSWORD IS SET HERE
+            if (pass === "1234") { 
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('chat-screen').classList.remove('hidden');
+                loadMessages();
+            } else {
+                alert("Incorrect Password!");
+            }
+        };
+
+        // Function to send a message to Firebase
+        window.sendMessage = () => {
+            const text = document.getElementById('msgInput').value;
+            const name = document.getElementById('nameInput').value;
+            if (text.trim() !== "") {
+                push(messagesRef, {
+                    username: name,
+                    message: text,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('msgInput').value = "";
+            }
+        };
+
+        // Function to listen for new messages
+        function loadMessages() {
+            onChildAdded(messagesRef, (snapshot) => {
+                const data = snapshot.val();
+                const chatBox = document.getElementById('chat-box');
+                const msgDiv = document.createElement('div');
+                msgDiv.className = "mb-3 p-3 rounded-xl bg-white border border-gray-100 shadow-sm self-start max-w-[80%]";
+                msgDiv.innerHTML = `
+                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wide mb-1">${data.username}</p>
+                    <p class="text-gray-800 text-sm">${data.message}</p>
+                `;
+                chatBox.appendChild(msgDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+    </script>
+</head>
+<body class="bg-slate-100 h-screen flex items-center justify-center font-sans">
+
+    <div id="login-screen" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 border border-gray-100">
+        <h2 class="text-2xl font-black mb-6 text-center text-slate-800">PRIVATE CHAT</h2>
+        <div class="space-y-4">
+            <input id="nameInput" type="text" placeholder="Your Name" class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <input id="passInput" type="password" placeholder="Passcode" class="w-full border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            <button onclick="checkAccess()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95">Enter Room</button>
+        </div>
+    </div>
+
+    <div id="chat-screen" class="hidden w-full max-w-md bg-slate-50 h-[95vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden mx-4 border border-white">
+        <div class="bg-white p-5 border-b flex justify-between items-center">
+            <h3 class="font-bold text-slate-800">Secure Chat</h3>
+            <span class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
+        </div>
+        
+        <div id="chat-box" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-2">
+            </div>
+
+        <div class="p-4 bg-white border-t flex items-center gap-2">
+            <input id="msgInput" type="text" placeholder="Type a message..." 
+                   onkeypress="if(event.key === 'Enter') sendMessage()"
+                   class="flex-1 bg-slate-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl font-bold transition-all active:scale-90">
+                Send
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
