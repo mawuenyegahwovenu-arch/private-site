@@ -25,17 +25,21 @@
         @media (max-width: 600px) { .local-video { width: 80px; bottom: 90px; } .remote-video { min-height: 250px; } }
         .msg-pop { animation: msgPop 0.2s ease-out; }
         @keyframes msgPop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .message-container { position: relative; transition: transform 0.1s ease-out; }
+        .message-container:hover { background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .swipe-hint { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); opacity: 0; color: #4CC9F0; font-size: 16px; transition: opacity 0.2s; }
+        .message-container.swiping .swipe-hint { opacity: 1; }
     </style>
 </head>
 <body id="main-body" class="theme-dark flex items-center justify-center p-2">
 
     <div id="login-screen" class="glass p-8 rounded-[3rem] w-full max-w-sm text-center shadow-2xl">
-        <div class="text-5xl mb-3">🌊</div>
+        <div class="text-5xl mb-3">💎</div>
         <h2 class="text-lg font-black mb-6 tracking-[0.2em] text-blue-500 uppercase">TOFFEE & SHANTEL</h2>
-        <input id="nameInput" type="text" placeholder="Name (Toffee or Shantel)" class="input-field w-full p-3 rounded-2xl mb-3 outline-none border text-center">
+        <input id="nameInput" type="text" placeholder="Name: ENTER THE SECREAT NAME!" class="input-field w-full p-3 rounded-2xl mb-3 outline-none border text-center">
         <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-3 rounded-2xl mb-5 outline-none border text-center">
         <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-3 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">ACCESS</button>
-        <p class="text-[9px] opacity-50 mt-4">Key: toffee</p>
+        <p class="text-[9px] opacity-50 mt-4">Key: Ask LYN or FEE😊</p>
     </div>
 
     <div id="chat-screen" class="hidden w-full max-w-md h-[95vh] flex flex-col glass rounded-[3rem] overflow-hidden relative shadow-2xl">
@@ -92,6 +96,18 @@
         </div>
     </div>
 
+    <div id="incoming-call-modal" class="call-modal hidden">
+        <div class="glass p-8 rounded-[3rem] text-center">
+            <div class="text-4xl mb-4">📞</div>
+            <h2 id="incoming-call-title" class="text-lg font-bold mb-4">Incoming Call</h2>
+            <p id="incoming-call-text" class="mb-6">From: User</p>
+            <div class="flex gap-4 justify-center">
+                <button onclick="acceptIncoming()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold">Accept</button>
+                <button onclick="rejectIncoming()" class="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold">Reject</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         const ALLOWED_USERS = ["Toffee", "Shantel"];
         const ACCESS_KEY = "toffee";
@@ -123,7 +139,13 @@
         let pendingCandidates = [];
         let callListeners = [];
         
+        let incomingCallId = null;
+        let incomingCallData = null;
+        
         const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+        
+        const callRing = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        callRing.loop = true;
         
         const rtcConfig = { 
             iceServers: [
@@ -132,16 +154,7 @@
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-                { 
-                    urls: 'turn:openrelay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
+
             ],
             iceCandidatePoolSize: 10
         };
@@ -173,8 +186,9 @@
                 listenForCalls();
             } else if (pass !== ACCESS_KEY) {
                 alert("Wrong key!");
-            } else if (!ALLOWED_USERS.includes(name)) {
-                alert("Only Toffee or Shantel can access");
+            } else if (!ALLOWED_USERS.includes(name)) { 
+                alert("ENTER YOUR SECREAT NAME!");
+        
             }
         };
 
@@ -242,6 +256,8 @@
                 };
                 await set(ref(db, `calls/${currentCallId}`), callData);
                 
+                callRing.play();
+                
                 peerConnection = new RTCPeerConnection(rtcConfig);
                 pendingCandidates = [];
                 
@@ -259,6 +275,9 @@
                 peerConnection.onconnectionstatechange = () => {
                     if (peerConnection.connectionState === 'connected') {
                         document.getElementById('call-status').innerText = `Connected to ${targetUser}`;
+                        update(ref(db, `calls/${currentCallId}`), { status: 'connected' });
+                        callRing.pause();
+                        callRing.currentTime = 0;
                     } else if (['disconnected', 'failed', 'closed'].includes(peerConnection.connectionState)) {
                         hangUp();
                     }
@@ -280,7 +299,7 @@
                 const answerListener = onValue(answerRef, (snapshot) => {
                     const answer = snapshot.val();
                     if (answer && peerConnection && peerConnection.signalingState === 'have-local-offer') {
-                        peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).catch(e => console.log(e));
+                        peerConnection.setRemoteDescription(new RTCSessionDescription(answer)).catch(() => {});
                     }
                 });
                 callListeners.push({ ref: answerRef, listener: answerListener });
@@ -304,7 +323,7 @@
                     const candidate = snapshot.val();
                     if (candidate) {
                         if (peerConnection && peerConnection.remoteDescription) {
-                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.log(e));
+                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
                         } else {
                             pendingCandidates.push(candidate);
                         }
@@ -333,12 +352,12 @@
             onChildAdded(callsRef, (snapshot) => {
                 const call = snapshot.val();
                 if (call.to === currentUser && call.status === 'calling') {
-                    const accept = confirm(`${call.from} is calling you (${call.type.toUpperCase()})\n\nClick OK to answer`);
-                    if (accept) {
-                        acceptCall(snapshot.key, call);
-                    } else {
-                        update(ref(db, `calls/${snapshot.key}`), { status: 'rejected' });
-                    }
+                    incomingCallId = snapshot.key;
+                    incomingCallData = call;
+                    document.getElementById('incoming-call-title').innerText = `${call.type.toUpperCase()} Call`;
+                    document.getElementById('incoming-call-text').innerText = `From: ${call.from}`;
+                    document.getElementById('incoming-call-modal').classList.remove('hidden');
+                    callRing.play();
                 }
             });
         }
@@ -377,6 +396,7 @@
                 peerConnection.onconnectionstatechange = () => {
                     if (peerConnection.connectionState === 'connected') {
                         document.getElementById('call-status').innerText = `Connected to ${call.from}`;
+                        update(ref(db, `calls/${callId}`), { status: 'connected' });
                     } else if (['disconnected', 'failed', 'closed'].includes(peerConnection.connectionState)) {
                         hangUp();
                     }
@@ -395,8 +415,7 @@
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 await update(ref(db, `calls/${callId}`), { 
-                    answer: { type: answer.type, sdp: answer.sdp },
-                    status: 'connected'
+                    answer: { type: answer.type, sdp: answer.sdp }
                 });
                 
                 // Listen for ICE candidates with queue
@@ -405,7 +424,7 @@
                     const candidate = snapshot.val();
                     if (candidate) {
                         if (peerConnection && peerConnection.remoteDescription) {
-                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.log(e));
+                            peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
                         } else {
                             pendingCandidates.push(candidate);
                         }
@@ -430,8 +449,29 @@
             }
         }
 
+        window.acceptIncoming = () => {
+            acceptCall(incomingCallId, incomingCallData);
+            document.getElementById('incoming-call-modal').classList.add('hidden');
+            callRing.pause();
+            callRing.currentTime = 0;
+            incomingCallId = null;
+            incomingCallData = null;
+        };
+
+        window.rejectIncoming = () => {
+            update(ref(db, `calls/${incomingCallId}`), { status: 'rejected' });
+            document.getElementById('incoming-call-modal').classList.add('hidden');
+            callRing.pause();
+            callRing.currentTime = 0;
+            incomingCallId = null;
+            incomingCallData = null;
+        };
+
         window.hangUp = () => {
             removeCallListeners();
+            
+            callRing.pause();
+            callRing.currentTime = 0;
             
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -550,12 +590,13 @@
             const chatBox = document.getElementById('chat-box');
             const div = document.createElement('div');
             div.id = `msg-${snapshot.key}`;
-            div.className = `flex ${isMe ? 'flex-row-reverse' : 'flex-row'} mb-2 gap-2 msg-pop`;
+            div.className = `message-container flex ${isMe ? 'flex-row-reverse' : 'flex-row'} mb-2 gap-2 msg-pop`;
             
             const timeStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             const replyHtml = data.replyTo ? `<div class="bg-black/20 p-1.5 rounded-lg mb-1 text-[9px] border-l-2 border-blue-500"><b>${escapeHtml(data.replyTo.username)}</b>: ${escapeHtml(data.replyTo.message.substring(0, 40))}</div>` : '';
             
             div.innerHTML = `
+                <div class="swipe-hint">↩️</div>
                 <div class="${isMe ? 'bubble-me rounded-l-2xl rounded-tr-2xl' : 'bubble-them rounded-r-2xl rounded-tl-2xl'} p-3 max-w-[80%] shadow-sm">
                     ${replyHtml}
                     <p class="text-[9px] opacity-60 font-bold mb-0.5 uppercase">${escapeHtml(data.username)}</p>
@@ -567,11 +608,85 @@
                 </div>
             `;
             
+            // Swipe to reply - Touch events
             let startX = 0;
-            div.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+            let startY = 0;
+            
+            div.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            });
+            
+            div.addEventListener('touchmove', (e) => {
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = currentX - startX;
+                const diffY = Math.abs(e.touches[0].clientY - startY);
+                
+                // Check if horizontal swipe (ignore vertical scrolls)
+                if (diffX > 10 && diffY < 30) {
+                    if (diffX > 0) {
+                        // Swiping right
+                        div.classList.add('swiping');
+                        div.style.transform = `translateX(${Math.min(diffX, 80)}px)`;
+                    } else {
+                        div.classList.remove('swiping');
+                        div.style.transform = 'translateX(0)';
+                    }
+                }
+            });
+            
             div.addEventListener('touchend', (e) => {
-                const diff = e.changedTouches[0].clientX - startX;
-                if (diff > 40) setReply(data);
+                const diffX = e.changedTouches[0].clientX - startX;
+                div.classList.remove('swiping');
+                div.style.transform = 'translateX(0)';
+                
+                if (diffX > 60) {
+                    setReply(data);
+                }
+            });
+            
+            // Mouse swipe support for desktop testing
+            let isMouseDown = false;
+            div.addEventListener('mousedown', (e) => {
+                isMouseDown = true;
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+            
+            div.addEventListener('mousemove', (e) => {
+                if (!isMouseDown) return;
+                const diffX = e.clientX - startX;
+                const diffY = Math.abs(e.clientY - startY);
+                
+                if (diffX > 10 && diffY < 30) {
+                    if (diffX > 0) {
+                        div.classList.add('swiping');
+                        div.style.transform = `translateX(${Math.min(diffX, 80)}px)`;
+                    } else {
+                        div.classList.remove('swiping');
+                        div.style.transform = 'translateX(0)';
+                    }
+                }
+            });
+            
+            div.addEventListener('mouseup', (e) => {
+                const diffX = e.clientX - startX;
+                isMouseDown = false;
+                div.classList.remove('swiping');
+                div.style.transform = 'translateX(0)';
+                
+                if (diffX > 60) {
+                    setReply(data);
+                }
+            });
+            
+            div.addEventListener('mouseleave', () => {
+                if (isMouseDown) {
+                    isMouseDown = false;
+                    div.classList.remove('swiping');
+                    div.style.transform = 'translateX(0)';
+                }
             });
             
             chatBox.appendChild(div);
