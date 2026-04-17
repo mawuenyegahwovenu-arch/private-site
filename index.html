@@ -3,276 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Private Cloud Vault</title>
+    <title>Private Cloud Vault - With Calls</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { transition: background 0.3s, color 0.3s; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
-        
-        /* Dark Theme */
-        .theme-dark { background: #0f172a; color: white; }
-        .theme-dark .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-        .theme-dark .bubble-me { background: #2563eb; color: white; }
-        .theme-dark .bubble-them { background: #1e293b; color: white; }
-        .theme-dark .input-field { background: #0f172a; border-color: #334155; color: white; }
-
-        /* Light Theme */
-        .theme-light { background: #f8fafc; color: #1e293b; }
-        .theme-light .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.05); }
-        .theme-light .bubble-me { background: #3b82f6; color: white; }
-        .theme-light .bubble-them { background: #e2e8f0; color: #1e293b; }
-        .theme-light .input-field { background: white; border-color: #cbd5e1; color: #1e293b; }
-
-        .msg-container { touch-action: pan-y; position: relative; transition: transform 0.1s; }
-        .reply-icon-bg { position: absolute; left: -30px; top: 50%; transform: translateY(-50%); opacity: 0; transition: 0.2s; font-size: 18px; color: #3b82f6; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px #22c55e; }
-        
+        .theme-dark { background: #2A829E; color: #EBF5F8; }
+        .theme-dark .glass { background: rgba(20, 65, 80, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(235, 245, 248, 0.1); }
+        .theme-dark .bubble-me { background: #4CC9F0; color: #0f172a; }
+        .theme-dark .bubble-them { background: rgba(255, 255, 255, 0.1); color: #EBF5F8; }
+        .theme-dark .input-field { background: rgba(0, 0, 0, 0.1); border-color: rgba(255, 255, 255, 0.2); color: white; }
+        .theme-light { background: #EBF5F8; color: #2A829E; }
+        .theme-light .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(42, 130, 158, 0.1); }
+        .theme-light .bubble-me { background: #2A829E; color: white; }
+        .theme-light .bubble-them { background: white; color: #2A829E; border: 1px solid #BDD9E1; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
         #chat-box::-webkit-scrollbar { width: 3px; }
-        #chat-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .msg-pop { animation: msgPop 0.3s ease-out; }
-        @keyframes msgPop { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .call-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .remote-video { width: 100%; max-width: 400px; border-radius: 20px; background: #1a1a2e; }
+        .local-video { position: absolute; bottom: 20px; right: 20px; width: 120px; border-radius: 12px; border: 2px solid white; }
     </style>
 </head>
 <body id="main-body" class="theme-dark flex items-center justify-center p-2">
 
-    <div id="login-screen" class="glass p-10 rounded-[3rem] w-full max-sm text-center shadow-2xl">
-        <div class="text-4xl mb-4">💎</div>
-        <h2 id="display-title-login" class="text-xl font-black mb-8 tracking-[0.2em] text-blue-500 uppercase">TOFFEE & SHANTEL</h2>
-        <input id="nameInput" type="text" placeholder="lyn" class="input-field w-full p-4 rounded-2xl mb-4 outline-none border transition-all">
-        <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-4 rounded-2xl mb-8 outline-none border transition-all">
-        <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">ACCESS</button>
+    <div id="login-screen" class="glass p-10 rounded-[3rem] w-full text-center shadow-2xl">
+        <div class="text-4xl mb-4">🌊</div>
+        <h2 class="text-xl font-black mb-8 tracking-[0.2em] text-blue-500 uppercase">TOFFEE & SHANTEL</h2>
+        <input id="nameInput" type="text" placeholder="Name" class="input-field w-full p-4 rounded-2xl mb-4 outline-none border">
+        <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-4 rounded-2xl mb-8 outline-none border">
+        <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold">ACCESS</button>
     </div>
 
-    <div id="chat-screen" class="hidden w-full max-w-md h-[94vh] flex flex-col glass rounded-[3rem] overflow-hidden relative shadow-2xl">
-        <div class="p-5 border-b border-white/10 flex justify-between items-center">
-            <div id="active-users" class="flex flex-col"></div>
+    <div id="chat-screen" class="hidden w-full max-w-md h-[94vh] flex flex-col glass rounded-[3rem] overflow-hidden relative">
+        <div class="p-5 border-b flex justify-between items-center">
+            <div id="active-users" class="flex flex-col text-sm"></div>
             <div class="flex gap-3">
-                <button id="theme-btn" onclick="toggleTheme()" class="bg-slate-800/40 p-2.5 rounded-full border border-white/5 shadow-inner">🌙</button>
-                <div class="relative">
-                    <button onclick="document.getElementById('mood-menu').classList.toggle('hidden')" class="bg-slate-800/40 p-2.5 rounded-full border border-white/5 shadow-inner">😊</button>
-                    <div id="mood-menu" class="hidden absolute right-0 mt-3 p-2 bg-slate-800 rounded-2xl flex gap-2 z-50 shadow-2xl">
-                        <button onclick="updateMood('📚')">📚</button><button onclick="updateMood('😴')">😴</button><button onclick="updateMood('🍕')">🍕</button>
-                    </div>
+                <button id="theme-btn" onclick="toggleTheme()" class="bg-slate-800/40 p-2.5 rounded-full">🌙</button>
+                <button onclick="document.getElementById('mood-menu').classList.toggle('hidden')" class="bg-slate-800/40 p-2.5 rounded-full">😊</button>
+                <div id="mood-menu" class="hidden absolute right-0 mt-12 p-2 bg-slate-800 rounded-2xl flex gap-2 z-50">
+                    <button onclick="updateMood('📚')">📚</button><button onclick="updateMood('😴')">😴</button><button onclick="updateMood('🍕')">🍕</button>
                 </div>
             </div>
         </div>
 
-        <div class="px-5 py-3">
-            <div class="bg-blue-500/10 p-3 rounded-2xl border border-blue-500/20 text-center">
-                <p id="pinText" class="text-[10px] font-medium text-blue-500 italic">No pinned notes...</p>
+        <div class="px-5 py-2">
+            <div class="bg-blue-500/10 p-2 rounded-xl text-center text-xs">
+                <p id="pinText" class="text-blue-500">No pinned notes...</p>
                 <div class="flex gap-2 mt-1">
-                    <input id="pinInput" type="text" placeholder="Update pin..." class="bg-transparent text-[10px] outline-none border-b border-blue-500/30 flex-1">
-                    <button onclick="savePin()" class="text-[10px] font-bold text-blue-500 uppercase">Pin</button>
+                    <input id="pinInput" type="text" placeholder="Update pin..." class="bg-transparent text-xs outline-none border-b border-blue-500/30 flex-1">
+                    <button onclick="savePin()" class="text-xs text-blue-500">Pin</button>
                 </div>
             </div>
         </div>
 
-        <div id="reply-preview" class="hidden px-5 py-2 bg-blue-500/10 border-b border-blue-500/20 flex justify-between items-center">
-            <div class="text-[10px]">
-                <p class="text-blue-500 font-bold" id="reply-user"></p>
-                <p class="opacity-60 truncate w-48" id="reply-text"></p>
-            </div>
-            <button onclick="cancelReply()" class="text-xs opacity-50">✕</button>
+        <div id="reply-preview" class="hidden px-5 py-2 bg-blue-500/10 flex justify-between text-xs">
+            <div><span id="reply-user" class="font-bold"></span>: <span id="reply-text"></span></div>
+            <button onclick="cancelReply()">✕</button>
         </div>
 
         <div id="chat-box" class="flex-1 p-5 overflow-y-auto space-y-3"></div>
-        <div id="typing-indicator" class="px-6 py-1 text-[10px] h-4 italic text-blue-500"></div>
+        <div id="typing-indicator" class="px-6 py-1 text-[10px] italic text-blue-500"></div>
 
-        <div class="p-5 flex items-center gap-3">
-            <input id="msgInput" type="text" placeholder="Message..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendMessage()" class="input-field flex-1 p-4 rounded-2xl outline-none border transition-all">
-            <button onclick="sendMessage()" class="bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg active:scale-90 transition-all">➤</button>
+        <div class="p-5 flex gap-3">
+            <input id="msgInput" type="text" placeholder="Message..." oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendMessage()" class="input-field flex-1 p-4 rounded-2xl outline-none border">
+            <button onclick="sendMessage()" class="bg-blue-600 text-white p-4 rounded-2xl font-bold">➤</button>
+        </div>
+    </div>
+
+    <div id="call-modal" class="call-modal hidden">
+        <div class="relative w-full max-w-md">
+            <video id="remote-video" class="remote-video" autoplay playsinline></video>
+            <video id="local-video" class="local-video" autoplay playsinline muted></video>
+            <div class="absolute bottom-28 left-0 right-0 flex justify-center gap-4">
+                <button onclick="hangUp()" class="bg-red-600 text-white p-4 rounded-full">📞 Hang Up</button>
+                <button id="toggle-mic" onclick="toggleMic()" class="bg-gray-700 text-white p-4 rounded-full">🎤</button>
+                <button id="toggle-cam" onclick="toggleCam()" class="bg-gray-700 text-white p-4 rounded-full">📷</button>
+            </div>
+            <p id="call-status" class="text-center text-white mt-4 text-sm">Connecting...</p>
         </div>
     </div>
 
     <script type="module">
-        const DEV_SETTINGS = { ACCESS_KEY: "toffee", VAULT_NAME: "TOFFEE & SHANTEL" };
         const ALLOWED_USERS = ["Toffee", "Shantel"];
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, onChildChanged, onValue, set, update, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDw_WkrANnsPvrnhqONu4Jx7U8BkrduL38",
-            authDomain: "private-chart.firebaseapp.com",
-            databaseURL: "https://private-chart-default-rtdb.firebaseio.com", 
-            projectId: "private-chart",
-            storageBucket: "private-chart.appspot.com",
-            messagingSenderId: "808076132779",
-            appId: "1:808076132779:web:456dbb1336d73ab661d2ee"
-        };
-
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp({ apiKey: "AIzaSyDw_WkrANnsPvrnhqONu4Jx7U8BkrduL38", authDomain: "private-chart.firebaseapp.com", databaseURL: "https://private-chart-default-rtdb.firebaseio.com", projectId: "private-chart", storageBucket: "private-chart.appspot.com", messagingSenderId: "808076132779", appId: "1:808076132779:web:456dbb1336d73ab661d2ee" });
         const db = getDatabase(app);
         const messagesRef = ref(db, 'messages');
         const pinRef = ref(db, 'pinnedNote');
-        let currentUser = "";
-        let replyingTo = null;
+        let currentUser = "", replyingTo = null, localStream = null, peerConnection = null, currentCallId = null;
         const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         window.toggleTheme = () => {
-            const body = document.getElementById('main-body');
-            const btn = document.getElementById('theme-btn');
-            const isDark = body.classList.toggle('theme-light'); 
-            // Invert logic for the icon: if theme-light is added, show Sun.
-            btn.innerText = body.classList.contains('theme-light') ? "☀️" : "🌙";
+            document.getElementById('main-body').classList.toggle('theme-light');
+            document.getElementById('theme-btn').innerText = document.getElementById('main-body').classList.contains('theme-light') ? "☀️" : "🌙";
         };
 
         window.checkAccess = () => {
             const name = document.getElementById('nameInput').value;
             const pass = document.getElementById('passInput').value;
-            if (pass === DEV_SETTINGS.ACCESS_KEY && name.trim() !== "") {
+            if (pass === "toffee" && name.trim()) {
                 currentUser = name;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('chat-screen').classList.remove('hidden');
-                setUserStatus(); loadMessages(); loadPinnedNote();
-            } else { alert("Key Incorrect"); }
+                setUserStatus(); loadMessages(); loadPinnedNote(); listenForCalls();
+            } else alert("Key Incorrect");
         };
 
         function setUserStatus() {
             if (!ALLOWED_USERS.includes(currentUser)) return;
             const statusRef = ref(db, `status/${currentUser}`);
-            set(statusRef, { online: true, lastSeen: serverTimestamp(), typing: false, mood: "👋" });
-            onDisconnect(statusRef).update({ online: false, lastSeen: serverTimestamp(), typing: false });
-
+            set(statusRef, { online: true, lastSeen: new Date().toISOString(), typing: false, mood: "👋" });
+            onDisconnect(statusRef).update({ online: false, lastSeen: new Date().toISOString(), typing: false });
+            
             onValue(ref(db, 'status'), (snapshot) => {
                 const statuses = snapshot.val();
                 let html = "", typingHtml = "";
                 for(let u in statuses) {
                     if(u !== currentUser && ALLOWED_USERS.includes(u)) {
                         const s = statuses[u];
-                        const dot = s.online ? '<span class="status-dot"></span>' : '';
-                        const moodStr = s.mood ? ` ${s.mood}` : "";
-                        const time = s.online ? 'Online' : `Last seen ${new Date(s.lastSeen).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-                        html += `<div class="flex flex-col"><div class="text-[12px] font-bold flex items-center">${dot}${u}${moodStr}</div><div class="text-[8px] opacity-50 uppercase">${time}</div></div>`;
+                        const dot = s.online ? '<span class="status-dot"></span>' : '● ';
+                        let timeDisplay = s.online ? 'Online now' : (s.lastSeen ? (() => { let m = Math.floor((new Date() - new Date(s.lastSeen))/60000); return m<1?'just now':m<60?m+' min ago':Math.floor(m/60)+' hr ago'; })() : 'Offline');
+                        const btns = s.online ? `<div class="flex gap-1 mt-1"><button onclick="window.startCall('${u}','audio')" class="text-[9px] bg-blue-600/30 px-2 rounded-full">🎵</button><button onclick="window.startCall('${u}','video')" class="text-[9px] bg-green-600/30 px-2 rounded-full">📹</button></div>` : '';
+                        html += `<div class="mb-2"><div class="text-xs font-bold flex items-center">${dot}${u} ${s.mood||''}</div><div class="text-[9px] opacity-50">${timeDisplay}</div>${btns}</div>`;
                         if(s.typing) typingHtml = `${u} is typing...`;
                     }
                 }
-                document.getElementById('active-users').innerHTML = html;
+                document.getElementById('active-users').innerHTML = html || 'No other users online';
                 document.getElementById('typing-indicator').innerHTML = typingHtml;
             });
         }
 
-        window.updateMood = (e) => { 
-            if(ALLOWED_USERS.includes(currentUser)) {
-                update(ref(db, `status/${currentUser}`), { mood: e }); 
-                document.getElementById('mood-menu').classList.add('hidden'); 
-            }
+        window.startCall = async (targetUser, type) => {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
+                document.getElementById('local-video').srcObject = localStream;
+                currentCallId = `${currentUser}_to_${targetUser}_${Date.now()}`;
+                await set(ref(db, `calls/${currentCallId}`), { from: currentUser, to: targetUser, type, status: 'calling', timestamp: serverTimestamp() });
+                document.getElementById('call-modal').classList.remove('hidden');
+                document.getElementById('call-status').innerText = `Calling ${targetUser}...`;
+                
+                peerConnection = new RTCPeerConnection(config);
+                peerConnection.onicecandidate = e => e.candidate && push(ref(db, `calls/${currentCallId}/candidates`), e.candidate);
+                peerConnection.ontrack = e => document.getElementById('remote-video').srcObject = e.streams[0];
+                peerConnection.onconnectionstatechange = () => ['disconnected','failed','closed'].includes(peerConnection.connectionState) && hangUp();
+                
+                localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                await update(ref(db, `calls/${currentCallId}`), { offer: { type: offer.type, sdp: offer.sdp }, status: 'offer_sent' });
+                
+                onValue(ref(db, `calls/${currentCallId}/answer`), (snap) => { if(snap.val() && peerConnection) peerConnection.setRemoteDescription(new RTCSessionDescription(snap.val())); });
+                onChildAdded(ref(db, `calls/${currentCallId}/candidates`), (snap) => { if(snap.val() && peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(snap.val())); });
+                onValue(ref(db, `calls/${currentCallId}/status`), (snap) => { if(snap.val() === 'rejected' || snap.val() === 'ended') hangUp(); });
+            } catch(e) { alert('Cannot access camera/microphone'); }
         };
 
-        window.savePin = () => { 
-            const n = document.getElementById('pinInput').value; 
-            if(n.trim() !== "") {
-                set(pinRef, { text: n }); 
-                document.getElementById('pinInput').value = "";
-            }
-        };
-
-        function loadPinnedNote() { 
-            onValue(pinRef, (s) => { 
-                if(s.val()) document.getElementById('pinText').innerText = `📌 ${s.val().text}`; 
-            }); 
+        function listenForCalls() {
+            onChildAdded(ref(db, 'calls'), (snap) => {
+                const call = snap.val();
+                if(call.to === currentUser && call.status === 'calling' && confirm(`${call.from} is calling (${call.type})`)) acceptCall(snap.key, call);
+                else if(call.to === currentUser && call.status === 'calling') update(ref(db, `calls/${snap.key}`), { status: 'rejected' });
+            });
         }
 
-        window.handleTyping = () => {
-            if(ALLOWED_USERS.includes(currentUser)) {
-                update(ref(db, `status/${currentUser}`), { typing: document.getElementById('msgInput').value.length > 0 });
-            }
+        async function acceptCall(callId, call) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: call.type === 'video', audio: true });
+                document.getElementById('local-video').srcObject = localStream;
+                document.getElementById('call-modal').classList.remove('hidden');
+                currentCallId = callId;
+                
+                peerConnection = new RTCPeerConnection(config);
+                peerConnection.onicecandidate = e => e.candidate && push(ref(db, `calls/${callId}/candidates`), e.candidate);
+                peerConnection.ontrack = e => document.getElementById('remote-video').srcObject = e.streams[0];
+                peerConnection.onconnectionstatechange = () => ['disconnected','failed','closed'].includes(peerConnection.connectionState) && hangUp();
+                
+                localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                await update(ref(db, `calls/${callId}`), { answer: { type: answer.type, sdp: answer.sdp }, status: 'connected' });
+                
+                onChildAdded(ref(db, `calls/${callId}/candidates`), (snap) => { if(snap.val() && peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(snap.val())); });
+            } catch(e) { hangUp(); }
+        }
+
+        window.hangUp = () => {
+            localStream?.getTracks().forEach(t => t.stop());
+            peerConnection?.close();
+            if(currentCallId) update(ref(db, `calls/${currentCallId}`), { status: 'ended' });
+            localStream = peerConnection = currentCallId = null;
+            document.getElementById('call-modal').classList.add('hidden');
+            document.getElementById('remote-video').srcObject = null;
+            document.getElementById('local-video').srcObject = null;
         };
 
-        window.initSwipe = (el, msgData) => {
-            let startX = 0;
-            el.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-            el.addEventListener('touchmove', e => {
-                let diff = e.touches[0].clientX - startX;
-                if (diff > 0 && diff < 70) { 
-                    el.style.transform = `translateX(${diff}px)`;
-                    el.querySelector('.reply-icon-bg').style.opacity = diff/70;
-                }
-            });
-            el.addEventListener('touchend', e => {
-                let diff = e.changedTouches[0].clientX - startX;
-                if (diff > 50) setReply(msgData);
-                el.style.transform = `translateX(0px)`;
-                el.querySelector('.reply-icon-bg').style.opacity = 0;
-            });
-        };
+        window.toggleMic = () => { let t = localStream?.getAudioTracks()[0]; if(t) { t.enabled = !t.enabled; document.getElementById('toggle-mic').style.opacity = t.enabled ? '1' : '0.5'; } };
+        window.toggleCam = () => { let t = localStream?.getVideoTracks()[0]; if(t) { t.enabled = !t.enabled; document.getElementById('toggle-cam').style.opacity = t.enabled ? '1' : '0.5'; } };
 
-        window.setReply = (data) => {
-            replyingTo = data;
-            document.getElementById('reply-user').innerText = data.username;
-            document.getElementById('reply-text').innerText = data.message;
-            document.getElementById('reply-preview').classList.remove('hidden');
-            document.getElementById('msgInput').focus();
-        };
-
-        window.cancelReply = () => {
-            replyingTo = null;
-            document.getElementById('reply-preview').classList.add('hidden');
-        };
-
-        window.sendMessage = () => {
-            const t = document.getElementById('msgInput').value;
-            if (t.trim() !== "") {
-                push(messagesRef, { 
-                    username: currentUser, 
-                    message: t, 
-                    seen: false, 
-                    timestamp: serverTimestamp(),
-                    replyTo: replyingTo 
-                });
-                document.getElementById('msgInput').value = "";
-                cancelReply();
-                if(ALLOWED_USERS.includes(currentUser)) update(ref(db, `status/${currentUser}`), { typing: false });
-            }
-        };
-
+        window.updateMood = (e) => { if(ALLOWED_USERS.includes(currentUser)) { update(ref(db, `status/${currentUser}`), { mood: e }); document.getElementById('mood-menu').classList.add('hidden'); } };
+        window.savePin = () => { let n = document.getElementById('pinInput').value; if(n.trim()) set(pinRef, { text: n }); document.getElementById('pinInput').value = ""; };
+        function loadPinnedNote() { onValue(pinRef, s => { if(s.val()) document.getElementById('pinText').innerHTML = `📌 ${s.val().text}`; }); }
+        window.handleTyping = () => { if(ALLOWED_USERS.includes(currentUser)) update(ref(db, `status/${currentUser}`), { typing: document.getElementById('msgInput').value.length > 0 }); };
+        window.setReply = (data) => { replyingTo = data; document.getElementById('reply-user').innerHTML = data.username; document.getElementById('reply-text').innerHTML = data.message; document.getElementById('reply-preview').classList.remove('hidden'); };
+        window.cancelReply = () => { replyingTo = null; document.getElementById('reply-preview').classList.add('hidden'); };
+        window.sendMessage = () => { let t = document.getElementById('msgInput').value; if(t.trim()) { push(messagesRef, { username: currentUser, message: t, seen: false, timestamp: serverTimestamp(), replyTo: replyingTo }); document.getElementById('msgInput').value = ""; cancelReply(); if(ALLOWED_USERS.includes(currentUser)) update(ref(db, `status/${currentUser}`), { typing: false }); } };
+        
         function loadMessages() {
-            onChildAdded(messagesRef, (s) => {
-                const d = s.val();
-                if (d.username !== currentUser) {
-                    if(!d.seen) update(ref(db, `messages/${s.key}`), { seen: true });
-                    msgSound.play().catch(()=>{});
-                }
-                renderMessage(s);
-            });
-            onChildChanged(messagesRef, (s) => {
-                const el = document.getElementById(`msg-${s.key}`);
-                if (el) {
-                    const statusText = el.querySelector('.read-status');
-                    if (s.val().seen) {
-                        statusText.innerText = 'Seen';
-                        statusText.classList.remove('text-gray-400');
-                        statusText.classList.add('text-blue-400');
-                    }
-                }
-            });
+            onChildAdded(messagesRef, s => { let d = s.val(); if(d.username !== currentUser) { if(!d.seen) update(ref(db, `messages/${s.key}`), { seen: true }); msgSound.play().catch(()=>{}); } renderMessage(s); });
+            onChildChanged(messagesRef, s => { let el = document.getElementById(`msg-${s.key}`); if(el && s.val().seen) { let st = el.querySelector('.read-status'); if(st) { st.innerText = 'Seen'; st.classList.add('text-blue-400'); } } });
         }
-
+        
         function renderMessage(s) {
-            const d = s.val();
-            const isMe = d.username === currentUser;
-            const chatBox = document.getElementById('chat-box');
-            const container = document.createElement('div');
-            container.id = `msg-${s.key}`;
-            container.className = `msg-container flex ${isMe ? 'flex-row-reverse' : 'flex-row'} mb-2 items-end gap-2 msg-pop`;
-            
-            let replyHTML = d.replyTo ? `<div class="bg-black/20 p-2 rounded-lg mb-1 text-[9px] border-l-2 border-blue-500"><b>${d.replyTo.username}</b>: ${d.replyTo.message}</div>` : '';
-            let checkMark = d.seen ? 'Seen' : '✓✓';
-
-            container.innerHTML = `
-                <div class="reply-icon-bg">↩</div>
-                <div class="${isMe ? 'bubble-me rounded-l-2xl rounded-tr-2xl' : 'bubble-them rounded-r-2xl rounded-tl-2xl'} p-3 max-w-[80%] shadow-sm">
-                    ${replyHTML}
-                    <p class="text-[8px] opacity-50 font-bold mb-1 uppercase">${d.username}</p>
-                    <p class="text-sm">${d.message}</p>
-                    <div class="flex items-center justify-end mt-1 space-x-1">
-                        <p class="text-[7px] opacity-40">${d.timestamp ? new Date(d.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</p>
-                        ${isMe ? `<span class="read-status text-[8px] font-bold ${d.seen ? 'text-blue-400' : 'text-gray-400'}">${checkMark}</span>` : ''}
-                    </div>
-                </div>`;
-            
-            initSwipe(container, d);
-            chatBox.appendChild(container);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            let d = s.val(), isMe = d.username === currentUser, box = document.getElementById('chat-box'), div = document.createElement('div');
+            div.id = `msg-${s.key}`; div.className = `flex ${isMe ? 'flex-row-reverse' : 'flex-row'} mb-2 gap-2`;
+            div.innerHTML = `<div class="${isMe ? 'bg-[#4CC9F0] text-black rounded-l-2xl rounded-tr-2xl' : 'bg-white/10 rounded-r-2xl rounded-tl-2xl'} p-3 max-w-[80%]">${d.replyTo ? `<div class="bg-black/20 p-1 rounded text-[9px] mb-1"><b>${d.replyTo.username}</b>: ${d.replyTo.message}</div>` : ''}<p class="text-[9px] opacity-50 mb-1">${d.username}</p><p class="text-sm">${d.message}</p><div class="flex justify-end mt-1 gap-1"><span class="text-[9px] opacity-40">${d.timestamp ? new Date(d.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ''}</span>${isMe ? `<span class="read-status text-[9px] ${d.seen ? 'text-blue-400' : 'text-gray-400'}">${d.seen ? 'Seen' : '✓✓'}</span>` : ''}</div></div>`;
+            box.appendChild(div); box.scrollTop = box.scrollHeight;
         }
     </script>
 </body>
