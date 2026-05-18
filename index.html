@@ -2,84 +2,329 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Toffee & Shantel - Private Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --spring-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth-easing: cubic-bezier(0.4, 0, 0.2, 1);
+            --bounce-easing: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { transition: background 0.3s, color 0.3s; font-family: system-ui, -apple-system, 'Inter', sans-serif; overflow: hidden; height: 100vh; }
-        .theme-dark { background: #2A829E; color: #EBF5F8; }
-        .theme-dark .glass { background: rgba(20, 65, 80, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(235, 245, 248, 0.1); }
-        .theme-dark .bubble-me { background: #4CC9F0; color: #0f172a; }
-        .theme-dark .bubble-them { background: rgba(255, 255, 255, 0.12); color: #EBF5F8; }
-        .theme-dark .input-field { background: rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.15); color: white; }
-        .theme-light { background: #EBF5F8; color: #2A829E; }
-        .theme-light .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); }
-        .theme-light .bubble-me { background: #2A829E; color: white; }
-        .theme-light .bubble-them { background: white; color: #2A829E; border: 1px solid #BDD9E1; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; box-shadow: 0 0 6px #22c55e; }
-        #chat-box::-webkit-scrollbar { width: 3px; }
-        .call-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.96); z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: blur(10px); }
-        .remote-video { width: 100%; max-width: 400px; border-radius: 24px; background: #1a1a2e; min-height: 300px; object-fit: cover; }
-        .local-video { position: absolute; bottom: 100px; right: 16px; width: 100px; border-radius: 16px; border: 2px solid white; background: #000; }
-        @media (max-width: 600px) { .local-video { width: 80px; bottom: 90px; } .remote-video { min-height: 250px; } }
-        .msg-pop { animation: msgPop 0.2s ease-out; }
-        @keyframes msgPop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .message-container { position: relative; transition: transform 0.1s ease-out; }
-        .message-container:hover { background: rgba(255,255,255,0.05); border-radius: 12px; }
-        .swipe-hint { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); opacity: 0; color: #4CC9F0; font-size: 16px; transition: opacity 0.2s; }
-        .message-container.swiping .swipe-hint { opacity: 1; }
+        
+        body { 
+            transition: background 0.4s var(--smooth-easing), color 0.4s var(--smooth-easing); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif; 
+            overflow: hidden; 
+            height: 100vh;
+            height: 100dvh;
+            position: fixed;
+            width: 100%;
+            touch-action: manipulation;
+            -webkit-overflow-scrolling: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .theme-dark { background: #1a5c73; color: #EBF5F8; }
+        .theme-dark .glass { 
+            background: rgba(20, 65, 80, 0.9); 
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+        .theme-dark .bubble-me { 
+            background: linear-gradient(135deg, #4CC9F0, #3db8df); 
+            color: #0a1a24; 
+            box-shadow: 0 4px 15px rgba(76, 201, 240, 0.2);
+        }
+        .theme-dark .bubble-them { 
+            background: rgba(255, 255, 255, 0.1); 
+            color: #EBF5F8; 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .theme-dark .input-field { 
+            background: rgba(0, 0, 0, 0.25); 
+            border: 1.5px solid rgba(255, 255, 255, 0.1); 
+            color: white; 
+        }
+        
+        .theme-light { background: #dceef5; color: #1a5c73; }
+        .theme-light .glass { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+        }
+        .theme-light .bubble-me { 
+            background: linear-gradient(135deg, #1a5c73, #2A829E); 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(26, 92, 115, 0.2);
+        }
+        .theme-light .bubble-them { 
+            background: white; 
+            color: #1a5c73; 
+            border: 1px solid #BDD9E1; 
+        }
+        .theme-light .input-field {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1.5px solid rgba(26, 92, 115, 0.15);
+            color: #1a5c73;
+        }
+        
+        .status-dot { 
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            background: #22c55e; 
+            display: inline-block; 
+            margin-right: 6px; 
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+            animation: pulse-dot 2s var(--smooth-easing) infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.8); }
+        }
+        
+        #chat-box {
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        
+        #chat-box::-webkit-scrollbar { width: 4px; }
+        #chat-box::-webkit-scrollbar-track { background: transparent; }
+        #chat-box::-webkit-scrollbar-thumb { 
+            background: rgba(255,255,255,0.15); 
+            border-radius: 10px; 
+        }
+        
+        .call-modal { 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.97); 
+            z-index: 1000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column; 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            animation: fadeIn 0.3s var(--smooth-easing);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .remote-video { 
+            width: 100%; 
+            max-width: 400px; 
+            border-radius: 24px; 
+            background: #1a1a2e; 
+            min-height: 300px; 
+            object-fit: cover; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        .local-video { 
+            position: absolute; 
+            bottom: 100px; 
+            right: 16px; 
+            width: 100px; 
+            border-radius: 16px; 
+            border: 2px solid rgba(255,255,255,0.8); 
+            background: #000; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            animation: slideUp 0.4s var(--spring-easing);
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @media (max-width: 600px) { 
+            .local-video { width: 80px; bottom: 90px; } 
+            .remote-video { min-height: 250px; } 
+        }
+        
+        .msg-pop { 
+            animation: msgPop 0.35s var(--spring-easing); 
+        }
+        
+        @keyframes msgPop { 
+            from { 
+                opacity: 0; 
+                transform: translateY(10px) scale(0.95); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            } 
+        }
+        
+        .message-container { 
+            position: relative; 
+            transition: transform 0.3s var(--spring-easing);
+            will-change: transform;
+            touch-action: pan-y;
+        }
+        
+        .message-container:active {
+            transition: none;
+        }
+        
+        .swipe-hint { 
+            position: absolute; 
+            left: 8px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            opacity: 0; 
+            color: #4CC9F0; 
+            font-size: 18px; 
+            transition: opacity 0.2s var(--smooth-easing);
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+        }
+        
+        .message-container.swiping .swipe-hint { 
+            opacity: 1;
+            animation: hintPulse 0.6s var(--smooth-easing) infinite alternate;
+        }
+        
+        @keyframes hintPulse {
+            from { transform: translateY(-50%) scale(1); }
+            to { transform: translateY(-50%) scale(1.2); }
+        }
+        
+        .message-container.swiping {
+            transition: transform 0.1s linear;
+        }
+        
+        button {
+            transition: all 0.2s var(--smooth-easing);
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        button:active {
+            transform: scale(0.92);
+            transition: transform 0.1s var(--smooth-easing);
+        }
+        
+        input {
+            transition: all 0.3s var(--smooth-easing);
+            -webkit-appearance: none;
+        }
+        
+        input:focus {
+            border-color: #4CC9F0 !important;
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.15);
+            outline: none;
+        }
+        
+        .glass {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        #reply-preview {
+            animation: slideUp 0.3s var(--spring-easing);
+            border-radius: 16px 16px 0 0;
+            margin-bottom: -1px;
+        }
+        
+        #typing-indicator {
+            min-height: 1.25rem;
+        }
+        
+        #typing-indicator:not(:empty) {
+            animation: fadeIn 0.3s var(--smooth-easing);
+        }
+        
+        .ripple {
+            animation: ripple 0.6s var(--smooth-easing) forwards;
+        }
+        
+        @keyframes ripple {
+            to { box-shadow: 0 0 0 12px rgba(76, 201, 240, 0); }
+        }
+
+        /* New styles for input container with reply */
+        .input-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .reply-preview-bottom {
+            background: rgba(59, 130, 246, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #4CC9F0;
+            border-radius: 16px 16px 0 0;
+            margin: 0 1rem;
+            transition: all 0.3s var(--spring-easing);
+        }
     </style>
 </head>
 <body id="main-body" class="theme-dark flex items-center justify-center p-2">
 
-    <div id="login-screen" class="glass p-8 rounded-[3rem] w-full max-w-sm text-center shadow-2xl">
-        <div class="text-5xl mb-3">💎</div>
+    <div id="login-screen" class="glass p-8 rounded-[3rem] w-full max-w-sm text-center shadow-2xl" style="animation: fadeIn 0.6s var(--spring-easing);">
+        <div class="text-5xl mb-3" style="animation: float 3s ease-in-out infinite;">💎</div>
         <h2 class="text-lg font-black mb-6 tracking-[0.2em] text-blue-500 uppercase">TOFFEE & SHANTEL</h2>
-        <input id="nameInput" type="text" placeholder="Name: ENTER THE SECREAT NAME!" class="input-field w-full p-3 rounded-2xl mb-3 outline-none border text-center">
-        <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-3 rounded-2xl mb-5 outline-none border text-center">
-        <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-3 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">ACCESS</button>
+        <input id="nameInput" type="text" placeholder="Name: ENTER THE SECREAT NAME!" class="input-field w-full p-3 rounded-2xl mb-3 outline-none text-center" autocomplete="off">
+        <input id="passInput" type="password" placeholder="Key" class="input-field w-full p-3 rounded-2xl mb-5 outline-none text-center">
+        <button onclick="checkAccess()" class="w-full bg-blue-600 text-white p-3 rounded-2xl font-bold shadow-lg transition-all hover:bg-blue-500">ACCESS</button>
         <p class="text-[9px] opacity-50 mt-4">Key: Ask LYN or FEE😊</p>
     </div>
 
-    <div id="chat-screen" class="hidden w-full max-w-md h-[95vh] flex flex-col glass rounded-[3rem] overflow-hidden relative shadow-2xl">
-        <div class="p-4 border-b border-white/10 flex justify-between items-center">
+    <div id="chat-screen" class="hidden w-full max-w-md h-[95vh] h-[95dvh] flex flex-col glass rounded-[3rem] overflow-hidden relative shadow-2xl" style="animation: fadeIn 0.5s var(--smooth-easing);">
+        <div class="p-4 border-b border-white/10 flex justify-between items-center shrink-0">
             <div id="active-users" class="flex flex-col text-xs"></div>
             <div class="flex gap-2">
-                <button id="theme-btn" onclick="toggleTheme()" class="bg-slate-800/40 w-9 h-9 rounded-full text-lg">🌙</button>
+                <button id="theme-btn" onclick="toggleTheme()" class="bg-slate-800/40 w-9 h-9 rounded-full text-lg hover:bg-slate-700/50">🌙</button>
                 <div class="relative">
-                    <button onclick="document.getElementById('mood-menu').classList.toggle('hidden')" class="bg-slate-800/40 w-9 h-9 rounded-full text-lg">😊</button>
-                    <div id="mood-menu" class="hidden absolute right-0 mt-2 p-2 bg-slate-800 rounded-2xl flex gap-2 z-50">
-                        <button onclick="updateMood('📚')" class="text-xl px-2">📚</button>
-                        <button onclick="updateMood('😴')" class="text-xl px-2">😴</button>
-                        <button onclick="updateMood('🍕')" class="text-xl px-2">🍕</button>
-                        <button onclick="updateMood('🎵')" class="text-xl px-2">🎵</button>
+                    <button onclick="toggleMoodMenu()" class="bg-slate-800/40 w-9 h-9 rounded-full text-lg hover:bg-slate-700/50">😊</button>
+                    <div id="mood-menu" class="hidden absolute right-0 mt-2 p-2 bg-slate-800/95 backdrop-blur-lg rounded-2xl flex gap-2 z-50 border border-white/10" style="animation: slideDown 0.3s var(--spring-easing);">
+                        <button onclick="updateMood('📚')" class="text-xl px-2 hover:scale-110 transition-transform">📚</button>
+                        <button onclick="updateMood('😴')" class="text-xl px-2 hover:scale-110 transition-transform">😴</button>
+                        <button onclick="updateMood('🍕')" class="text-xl px-2 hover:scale-110 transition-transform">🍕</button>
+                        <button onclick="updateMood('🎵')" class="text-xl px-2 hover:scale-110 transition-transform">🎵</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="px-4 py-2">
-            <div class="bg-blue-500/10 p-2 rounded-xl text-center text-xs">
-                <p id="pinText" class="text-blue-500">📌 No pinned notes...</p>
-                <div class="flex gap-2 mt-1">
-                    <input id="pinInput" type="text" placeholder="Update pin..." class="bg-transparent text-xs outline-none border-b border-blue-500/30 flex-1">
-                    <button onclick="savePin()" class="text-xs text-blue-500 font-bold">Pin</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="reply-preview" class="hidden px-4 py-2 bg-blue-500/10 border-b border-blue-500/20 flex justify-between items-center text-xs">
-            <div><span id="reply-user" class="font-bold text-blue-500"></span>: <span id="reply-text" class="opacity-70"></span></div>
-            <button onclick="cancelReply()" class="text-white/50 text-lg leading-4">✕</button>
-        </div>
-
         <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-2"></div>
-        <div id="typing-indicator" class="px-5 py-1 text-[9px] italic text-blue-500 h-4"></div>
+        <div id="typing-indicator" class="px-5 py-1 text-[9px] italic text-blue-400 h-5 shrink-0 opacity-0 transition-opacity duration-300"></div>
 
-        <div class="p-4 flex gap-2">
-            <input id="msgInput" type="text" placeholder="Message..." oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendMessage()" class="input-field flex-1 p-3 rounded-2xl outline-none border text-sm">
-            <button onclick="sendMessage()" class="bg-blue-600 text-white w-12 h-12 rounded-2xl font-bold shadow-lg active:scale-90 transition-all text-xl">➤</button>
+        <!-- Reply preview moved right above input -->
+        <div class="input-container shrink-0">
+            <div id="reply-preview" class="hidden reply-preview-bottom px-4 py-2.5 flex justify-between items-center text-xs">
+                <div class="flex-1 min-w-0 flex items-center gap-2">
+                    <span class="text-blue-400 text-lg">↩️</span>
+                    <div class="flex-1 min-w-0">
+                        <span id="reply-user" class="font-bold text-blue-400 text-[10px]"></span>
+                        <span class="opacity-40 mx-1 text-[10px]">replying to</span>
+                        <span id="reply-text" class="opacity-70 truncate text-[10px]"></span>
+                    </div>
+                </div>
+                <button onclick="cancelReply()" class="text-white/50 text-base leading-4 ml-2 hover:text-white/80 transition-colors p-1">✕</button>
+            </div>
+            
+            <div class="p-4 flex gap-2">
+                <input id="msgInput" type="text" placeholder="Type a message..." oninput="handleTyping()" onkeypress="if(event.key==='Enter') sendMessage()" class="input-field flex-1 p-3 rounded-2xl outline-none text-sm" autocomplete="off">
+                <button onclick="sendMessage()" class="bg-blue-600 text-white w-12 h-12 rounded-2xl font-bold shadow-lg text-xl hover:bg-blue-500 active:bg-blue-700">➤</button>
+            </div>
         </div>
     </div>
 
@@ -88,22 +333,22 @@
             <video id="remote-video" class="remote-video" autoplay playsinline></video>
             <video id="local-video" class="local-video" autoplay playsinline muted></video>
             <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-3">
-                <button onclick="hangUp()" class="bg-red-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg active:scale-95 text-sm">📞 Hang Up</button>
-                <button id="toggle-mic" onclick="toggleMic()" class="bg-gray-700 text-white px-3 py-2.5 rounded-full text-lg active:scale-95">🎤</button>
-                <button id="toggle-cam" onclick="toggleCam()" class="bg-gray-700 text-white px-3 py-2.5 rounded-full text-lg active:scale-95">📷</button>
+                <button onclick="hangUp()" class="bg-red-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg text-sm hover:bg-red-500">📞 Hang Up</button>
+                <button id="toggle-mic" onclick="toggleMic()" class="bg-gray-700/80 backdrop-blur text-white px-3 py-2.5 rounded-full text-lg hover:bg-gray-600">🎤</button>
+                <button id="toggle-cam" onclick="toggleCam()" class="bg-gray-700/80 backdrop-blur text-white px-3 py-2.5 rounded-full text-lg hover:bg-gray-600">📷</button>
             </div>
             <p id="call-status" class="text-center text-white mt-4 text-xs font-medium">Connecting...</p>
         </div>
     </div>
 
     <div id="incoming-call-modal" class="call-modal hidden">
-        <div class="glass p-8 rounded-[3rem] text-center">
-            <div class="text-4xl mb-4">📞</div>
+        <div class="glass p-8 rounded-[3rem] text-center" style="animation: msgPop 0.5s var(--spring-easing);">
+            <div class="text-4xl mb-4" style="animation: float 2s ease-in-out infinite;">📞</div>
             <h2 id="incoming-call-title" class="text-lg font-bold mb-4">Incoming Call</h2>
             <p id="incoming-call-text" class="mb-6">From: User</p>
             <div class="flex gap-4 justify-center">
-                <button onclick="acceptIncoming()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold">Accept</button>
-                <button onclick="rejectIncoming()" class="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold">Reject</button>
+                <button onclick="acceptIncoming()" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-green-500">Accept</button>
+                <button onclick="rejectIncoming()" class="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-red-500">Reject</button>
             </div>
         </div>
     </div>
@@ -128,7 +373,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const messagesRef = ref(db, 'messages');
-        const pinRef = ref(db, 'pinnedNote');
         const callsRef = ref(db, 'calls');
         
         let currentUser = "";
@@ -143,9 +387,11 @@
         let incomingCallData = null;
         
         const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+        msgSound.volume = 0.5;
         
         const callRing = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         callRing.loop = true;
+        callRing.volume = 0.7;
         
         const rtcConfig = { 
             iceServers: [
@@ -154,9 +400,36 @@
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' },
-
             ],
             iceCandidatePoolSize: 10
+        };
+
+        // Prevent zooming
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
+        
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+            lastTouchEnd = now;
+        }, false);
+
+        // Close mood menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('mood-menu');
+            if (menu && !menu.classList.contains('hidden') && !e.target.closest('#mood-menu') && !e.target.closest('button[onclick*="mood-menu"]')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        window.toggleMoodMenu = () => {
+            document.getElementById('mood-menu').classList.toggle('hidden');
         };
 
         function removeCallListeners() {
@@ -169,7 +442,10 @@
         window.toggleTheme = () => {
             const body = document.getElementById('main-body');
             const isLight = body.classList.toggle('theme-light');
-            document.getElementById('theme-btn').innerText = isLight ? "☀️" : "🌙";
+            const btn = document.getElementById('theme-btn');
+            btn.innerText = isLight ? "☀️" : "🌙";
+            btn.style.transform = 'scale(1.2)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 200);
         };
 
         window.checkAccess = () => {
@@ -178,19 +454,50 @@
             
             if (pass === ACCESS_KEY && name !== "" && ALLOWED_USERS.includes(name)) {
                 currentUser = name;
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('chat-screen').classList.remove('hidden');
-                setUserStatus();
-                loadMessages();
-                loadPinnedNote();
-                listenForCalls();
+                document.getElementById('login-screen').style.animation = 'fadeIn 0.3s var(--smooth-easing) reverse';
+                setTimeout(() => {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('chat-screen').classList.remove('hidden');
+                    setUserStatus();
+                    loadMessages();
+                    listenForCalls();
+                }, 250);
             } else if (pass !== ACCESS_KEY) {
+                shakeElement(document.getElementById('passInput'));
                 alert("Wrong key!");
             } else if (!ALLOWED_USERS.includes(name)) { 
-                alert("ENTER YOUR SECREAT NAME!");
-        
+                shakeElement(document.getElementById('nameInput'));
+                alert("ENTER YOUR SECRET NAME!");
             }
         };
+
+        function shakeElement(el) {
+            el.style.animation = 'none';
+            el.offsetHeight;
+            el.style.animation = 'shake 0.5s var(--smooth-easing)';
+            setTimeout(() => el.style.animation = '', 500);
+        }
+
+        // Add shake animation
+        const shakeStyle = document.createElement('style');
+        shakeStyle.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translateX(-8px); }
+                40% { transform: translateX(8px); }
+                60% { transform: translateX(-4px); }
+                80% { transform: translateX(4px); }
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+            @keyframes slideDown {
+                from { transform: translateY(-100%); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(shakeStyle);
 
         function setUserStatus() {
             const statusRef = ref(db, `status/${currentUser}`);
@@ -204,7 +511,7 @@
                 for(let u in statuses) {
                     if(u !== currentUser && ALLOWED_USERS.includes(u)) {
                         const s = statuses[u];
-                        const dot = s.online ? '<span class="status-dot"></span>' : '● ';
+                        const dot = s.online ? '<span class="status-dot"></span>' : '<span style="color: #94a3b8; margin-right: 6px;">●</span>';
                         
                         let timeDisplay = s.online ? 'Online now' : 'Offline';
                         if (!s.online && s.lastSeen) {
@@ -215,17 +522,20 @@
                         const moodStr = s.mood ? ` ${s.mood}` : "";
                         const callBtns = s.online ? `
                             <div class="flex gap-1 mt-1">
-                                <button onclick="window.startCall('${u}','audio')" class="text-[9px] bg-blue-600/50 px-2 py-0.5 rounded-full">🎵 Call</button>
-                                <button onclick="window.startCall('${u}','video')" class="text-[9px] bg-green-600/50 px-2 py-0.5 rounded-full">📹 Video</button>
+                                <button onclick="window.startCall('${u}','audio')" class="text-[9px] bg-blue-600/60 hover:bg-blue-500/60 px-2 py-0.5 rounded-full transition-all">🎵 Call</button>
+                                <button onclick="window.startCall('${u}','video')" class="text-[9px] bg-green-600/60 hover:bg-green-500/60 px-2 py-0.5 rounded-full transition-all">📹 Video</button>
                             </div>
                         ` : '';
                         
-                        html += `<div class="mb-2 p-1 rounded-lg bg-white/5"><div class="text-xs font-bold flex items-center">${dot}${u}${moodStr}</div><div class="text-[9px] opacity-50">${timeDisplay}</div>${callBtns}</div>`;
+                        html += `<div class="mb-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"><div class="text-xs font-bold flex items-center">${dot}${u}${moodStr}</div><div class="text-[9px] opacity-50">${timeDisplay}</div>${callBtns}</div>`;
                         if(s.typing) typingHtml = `${u} is typing...`;
                     }
                 }
                 document.getElementById('active-users').innerHTML = html || '<div class="text-xs opacity-50 p-2">No other users online</div>';
-                document.getElementById('typing-indicator').innerHTML = typingHtml;
+                
+                const typingEl = document.getElementById('typing-indicator');
+                typingEl.innerHTML = typingHtml;
+                typingEl.style.opacity = typingHtml ? '1' : '0';
             });
         }
 
@@ -294,7 +604,6 @@
                     status: 'offer_sent'
                 });
                 
-                // Listen for answer
                 const answerRef = ref(db, `calls/${currentCallId}/answer`);
                 const answerListener = onValue(answerRef, (snapshot) => {
                     const answer = snapshot.val();
@@ -304,7 +613,6 @@
                 });
                 callListeners.push({ ref: answerRef, listener: answerListener });
                 
-                // Listen for status changes (reject/end)
                 const statusRef = ref(db, `calls/${currentCallId}/status`);
                 const statusListener = onValue(statusRef, (snapshot) => {
                     const status = snapshot.val();
@@ -317,7 +625,6 @@
                 });
                 callListeners.push({ ref: statusRef, listener: statusListener });
                 
-                // Listen for ICE candidates with queue
                 const candidatesRef = ref(db, `calls/${currentCallId}/candidates`);
                 const candidateListener = onChildAdded(candidatesRef, (snapshot) => {
                     const candidate = snapshot.val();
@@ -331,7 +638,6 @@
                 });
                 callListeners.push({ ref: candidatesRef, listener: candidateListener });
                 
-                // Process pending candidates once remote description is set
                 const waitForRemoteDesc = setInterval(() => {
                     if (peerConnection && peerConnection.remoteDescription) {
                         while (pendingCandidates.length) {
@@ -358,6 +664,13 @@
                     document.getElementById('incoming-call-text').innerText = `From: ${call.from}`;
                     document.getElementById('incoming-call-modal').classList.remove('hidden');
                     callRing.play();
+                    
+                    // Auto-reject after 60 seconds
+                    setTimeout(() => {
+                        if (incomingCallId === snapshot.key && document.getElementById('incoming-call-modal').classList.contains('hidden') === false) {
+                            window.rejectIncoming();
+                        }
+                    }, 60000);
                 }
             });
         }
@@ -418,7 +731,6 @@
                     answer: { type: answer.type, sdp: answer.sdp }
                 });
                 
-                // Listen for ICE candidates with queue
                 const candidatesRef = ref(db, `calls/${callId}/candidates`);
                 const candidateListener = onChildAdded(candidatesRef, (snapshot) => {
                     const candidate = snapshot.val();
@@ -432,7 +744,6 @@
                 });
                 callListeners.push({ ref: candidatesRef, listener: candidateListener });
                 
-                // Process pending candidates
                 const waitForRemoteDesc = setInterval(() => {
                     if (peerConnection && peerConnection.remoteDescription) {
                         while (pendingCandidates.length) {
@@ -459,7 +770,9 @@
         };
 
         window.rejectIncoming = () => {
-            update(ref(db, `calls/${incomingCallId}`), { status: 'rejected' });
+            if (incomingCallId) {
+                update(ref(db, `calls/${incomingCallId}`), { status: 'rejected' });
+            }
             document.getElementById('incoming-call-modal').classList.add('hidden');
             callRing.pause();
             callRing.currentTime = 0;
@@ -513,37 +826,26 @@
             document.getElementById('mood-menu').classList.add('hidden');
         };
 
-        window.savePin = () => {
-            const text = document.getElementById('pinInput').value.trim();
-            if (text) {
-                set(pinRef, { text: text });
-                document.getElementById('pinInput').value = "";
-            }
-        };
-
-        function loadPinnedNote() {
-            onValue(pinRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.text) {
-                    document.getElementById('pinText').innerHTML = `📌 ${data.text}`;
-                }
-            });
-        }
-
         window.handleTyping = () => {
             update(ref(db, `status/${currentUser}`), { typing: document.getElementById('msgInput').value.length > 0 });
         };
 
         window.setReply = (data) => {
             replyingTo = data;
-            document.getElementById('reply-user').innerHTML = data.username;
-            document.getElementById('reply-text').innerHTML = data.message.substring(0, 50);
+            document.getElementById('reply-user').textContent = data.username;
+            document.getElementById('reply-text').textContent = data.message.substring(0, 50);
             document.getElementById('reply-preview').classList.remove('hidden');
+            document.getElementById('msgInput').focus();
         };
 
         window.cancelReply = () => {
             replyingTo = null;
-            document.getElementById('reply-preview').classList.add('hidden');
+            const preview = document.getElementById('reply-preview');
+            preview.style.animation = 'slideUp 0.2s var(--smooth-easing) reverse';
+            setTimeout(() => {
+                preview.classList.add('hidden');
+                preview.style.animation = 'slideUp 0.3s var(--spring-easing)';
+            }, 180);
         };
 
         window.sendMessage = () => {
@@ -559,6 +861,11 @@
                 document.getElementById('msgInput').value = "";
                 cancelReply();
                 update(ref(db, `status/${currentUser}`), { typing: false });
+                
+                // Add ripple effect to send button
+                const sendBtn = document.querySelector('button[onclick="sendMessage()"]');
+                sendBtn.classList.add('ripple');
+                setTimeout(() => sendBtn.classList.remove('ripple'), 600);
             }
         };
 
@@ -593,7 +900,7 @@
             div.className = `message-container flex ${isMe ? 'flex-row-reverse' : 'flex-row'} mb-2 gap-2 msg-pop`;
             
             const timeStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            const replyHtml = data.replyTo ? `<div class="bg-black/20 p-1.5 rounded-lg mb-1 text-[9px] border-l-2 border-blue-500"><b>${escapeHtml(data.replyTo.username)}</b>: ${escapeHtml(data.replyTo.message.substring(0, 40))}</div>` : '';
+            const replyHtml = data.replyTo ? `<div class="bg-black/20 p-1.5 rounded-lg mb-1 text-[9px] border-l-2 border-blue-400"><b>${escapeHtml(data.replyTo.username)}</b>: ${escapeHtml(data.replyTo.message.substring(0, 40))}</div>` : '';
             
             div.innerHTML = `
                 <div class="swipe-hint">↩️</div>
@@ -608,89 +915,94 @@
                 </div>
             `;
             
-            // Swipe to reply - Touch events
+            // Smooth swipe to reply
             let startX = 0;
             let startY = 0;
+            let swiping = false;
+            let swipeOffset = 0;
             
             div.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
+                swiping = false;
+                swipeOffset = 0;
+                div.style.transition = 'none';
             });
             
             div.addEventListener('touchmove', (e) => {
                 const currentX = e.touches[0].clientX;
                 const currentY = e.touches[0].clientY;
                 const diffX = currentX - startX;
-                const diffY = Math.abs(e.touches[0].clientY - startY);
+                const diffY = Math.abs(currentY - startY);
                 
-                // Check if horizontal swipe (ignore vertical scrolls)
-                if (diffX > 10 && diffY < 30) {
+                if (Math.abs(diffX) > 8 && diffY < 25) {
                     if (diffX > 0) {
-                        // Swiping right
+                        swiping = true;
+                        swipeOffset = Math.min(diffX * 0.8, 80);
                         div.classList.add('swiping');
-                        div.style.transform = `translateX(${Math.min(diffX, 80)}px)`;
-                    } else {
-                        div.classList.remove('swiping');
-                        div.style.transform = 'translateX(0)';
+                        div.style.transform = `translateX(${swipeOffset}px)`;
+                        e.preventDefault();
                     }
                 }
             });
             
             div.addEventListener('touchend', (e) => {
-                const diffX = e.changedTouches[0].clientX - startX;
+                div.style.transition = 'transform 0.3s var(--spring-easing)';
                 div.classList.remove('swiping');
                 div.style.transform = 'translateX(0)';
                 
-                if (diffX > 60) {
+                if (swiping && swipeOffset > 50) {
                     setReply(data);
                 }
+                swiping = false;
+                swipeOffset = 0;
             });
             
-            // Mouse swipe support for desktop testing
+            // Mouse swipe for desktop
             let isMouseDown = false;
+            
             div.addEventListener('mousedown', (e) => {
                 isMouseDown = true;
                 startX = e.clientX;
                 startY = e.clientY;
+                swipeOffset = 0;
+                div.style.transition = 'none';
             });
             
-            div.addEventListener('mousemove', (e) => {
+            window.addEventListener('mousemove', (e) => {
                 if (!isMouseDown) return;
                 const diffX = e.clientX - startX;
                 const diffY = Math.abs(e.clientY - startY);
                 
-                if (diffX > 10 && diffY < 30) {
-                    if (diffX > 0) {
-                        div.classList.add('swiping');
-                        div.style.transform = `translateX(${Math.min(diffX, 80)}px)`;
-                    } else {
-                        div.classList.remove('swiping');
-                        div.style.transform = 'translateX(0)';
-                    }
+                if (Math.abs(diffX) > 8 && diffY < 25 && diffX > 0) {
+                    swipeOffset = Math.min(diffX * 0.8, 80);
+                    div.classList.add('swiping');
+                    div.style.transform = `translateX(${swipeOffset}px)`;
                 }
             });
             
-            div.addEventListener('mouseup', (e) => {
-                const diffX = e.clientX - startX;
+            window.addEventListener('mouseup', (e) => {
+                if (!isMouseDown) return;
                 isMouseDown = false;
+                div.style.transition = 'transform 0.3s var(--spring-easing)';
                 div.classList.remove('swiping');
                 div.style.transform = 'translateX(0)';
                 
-                if (diffX > 60) {
+                if (swipeOffset > 50) {
                     setReply(data);
                 }
-            });
-            
-            div.addEventListener('mouseleave', () => {
-                if (isMouseDown) {
-                    isMouseDown = false;
-                    div.classList.remove('swiping');
-                    div.style.transform = 'translateX(0)';
-                }
+                swipeOffset = 0;
             });
             
             chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // Smooth scroll to bottom
+            requestAnimationFrame(() => {
+                chatBox.scrollTo({
+                    top: chatBox.scrollHeight,
+                    behavior: 'smooth'
+                });
+            });
         }
         
         function escapeHtml(text) {
